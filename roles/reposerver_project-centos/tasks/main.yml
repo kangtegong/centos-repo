@@ -1,0 +1,51 @@
+---
+- name: create data directory
+  file:
+    path: '/data/centos'
+    state: 'directory'
+    setype: 'httpd_sys_content_t'
+- name: create vault data directory
+  file:
+    path: '/data/centos-vault'
+    state: 'directory'
+    setype: 'httpd_sys_content_t'
+## cron scripts
+- name: create directory for script run by cron
+  file:
+    path: '/etc/cron.reposerver.d/project-centos'
+    state: 'directory'
+- name: copy scripts that will be run by cron
+  synchronize:
+    src: 'scripts/'
+    dest: '/etc/cron.reposerver.d/project-centos'
+- name: create cron tasks
+  copy:
+    src: 'project-centos.cron'
+    dest: '/etc/cron.d/project-centos.cron'
+## rsync
+- name: create rsync configuration
+  copy:
+    src: 'centos_rsync.conf'
+    dest: '/etc/rsyncd.conf.d/centos.conf'
+  notify: restart rsyncd
+## monitoring
+- name: add monitoring of this project to zabbix agent 
+  copy:
+    src: 'project-centos-zabbix-agent.conf'
+    dest: '/etc/zabbix/zabbix_agentd.d/project-centos-zabbix-agent.conf'
+  notify: restart zabbix-agent
+## mirrorlist fake webserver
+- name: create web configuration for fake mirrorlist
+  copy:
+    src: 'fake-mirrorlist.centos.org.conf'
+    dest: '/etc/nginx/conf.d/fake-mirrorlist.centos.org.conf'
+  notify: reload nginx
+- name: create /www-fake directory
+  file:
+    path: '/var/www/www-fake'
+    state: 'directory'
+    setype: 'httpd_sys_content_t'
+- name: copy files for fake mirrorlist site
+  synchronize:
+    src: 'www-fake/'
+    dest: '/var/www/www-fake'

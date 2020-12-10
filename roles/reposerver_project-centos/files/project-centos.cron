@@ -1,0 +1,4 @@
+SHELL=/bin/bash
+PATH=/sbin:/bin:/usr/sbin:/usr/bin
+MAILTO=root
+05 */6 * * * root run-parts /etc/cron.reposerver.d/project-centos >> /var/log/cron_project-centos.log 2>&1

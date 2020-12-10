@@ -1,0 +1,57 @@
+---
+- name: download current version of 'getssl' script
+  get_url:
+    url: 'https://raw.githubusercontent.com/srvrco/getssl/master/getssl'
+    dest: '/usr/local/sbin/getssl'
+    mode: '0700'
+- name: install getssl dependencies
+  yum:
+    name: bind-utils
+    state: installed
+- name: create directories for getssl configuration
+  file:
+    path: "{{ item }}"
+    state: 'directory'
+    mode: '0755'
+  with_items:
+    - '/root/.getssl'
+    - '/root/.getssl/mirror.opensourcelab.co.kr'
+- name: copy getssl config files (1/2)
+  copy:
+    src: 'getssl.cfg'
+    dest: '/root/.getssl/getssl.cfg'
+    mode: '0644'
+- name: copy getssl config files (2/2)
+  copy:
+    src: 'getssl-mirror.opensourcelab.co.kr.cfg'
+    dest: '/root/.getssl/mirror.opensourcelab.co.kr/getssl.cfg'
+    mode: '0644'
+- name: copy getssl account key
+  copy:
+    src: 'account.key'
+    dest: '/root/.getssl/account.key'
+    mode: '0600'
+- name: generate new version of certificate if needed
+  command: /usr/local/sbin/getssl -a
+- name: copy nginx TLS configuration
+  copy:
+    src: 'www-public-ssl.conf'
+    dest: '/etc/nginx/conf.d/www-public-ssl.conf'
+    mode: '0644'
+  notify: reload nginx
+- name: create cron task for automatic renewal of certificate
+  copy:
+    src: 'getssl.cron'
+    dest: '/etc/cron.d/getssl.cron'
+## monitoring
+- name: add monitoring script for SSL certificate
+  copy:
+    src: 'ssl_check.sh'
+    dest: '/usr/local/bin/ssl_check.sh'
+    mode: '0755'
+    setype: 'zabbix_script_exec_t'
+- name: add monitoring of ssl certificate expiration data to zabbix
+  copy:
+    src: 'ssl-check-zabbix-agent.conf'
+    dest: '/etc/zabbix/zabbix_agentd.d/ssl-check-zabbix-agent.conf'
+  notify: restart zabbix-agent

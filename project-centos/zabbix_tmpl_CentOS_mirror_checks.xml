@@ -1,0 +1,210 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<zabbix_export>
+    <version>5.0</version>
+    <date>2020-07-23T08:38:02Z</date>
+    <groups>
+        <group>
+            <name>Templates OSC</name>
+        </group>
+    </groups>
+    <templates>
+        <template>
+            <template>CentOS mirror checks</template>
+            <name>CentOS mirror checks</name>
+            <description>Checks for monitoring CentOS mirror</description>
+            <groups>
+                <group>
+                    <name>Templates OSC</name>
+                </group>
+            </groups>
+            <applications>
+                <application>
+                    <name>Mirroring</name>
+                </application>
+                <application>
+                    <name>VDO</name>
+                </application>
+            </applications>
+            <items>
+                <item>
+                    <name>SSL expiration timestamp (mirror.opensourcelab.co.kr)</name>
+                    <key>mirrorssl.expirytime</key>
+                    <delay>1d</delay>
+                    <description>Timestamp of SSL certificate used on mirror.opensourcelab.co.kr</description>
+                    <applications>
+                        <application>
+                            <name>Mirroring</name>
+                        </application>
+                    </applications>
+                    <triggers>
+                        <trigger>
+                            <expression>{last()}-{now()}&lt;604800</expression>
+                            <name>SSL certificate for mirror.opensourcelab.co.kr expires in less than 7 days</name>
+                            <priority>WARNING</priority>
+                        </trigger>
+                        <trigger>
+                            <expression>{last()}-{now()}&lt;1209600</expression>
+                            <name>SSL certificate for mirror.opensourcelab.co.kr expires in less than 14 days</name>
+                            <priority>INFO</priority>
+                            <dependencies>
+                                <dependency>
+                                    <name>SSL certificate for mirror.opensourcelab.co.kr expires in less than 7 days</name>
+                                    <expression>{CentOS mirror checks:mirrorssl.expirytime.last()}-{CentOS mirror checks:mirrorssl.expirytime.now()}&lt;604800</expression>
+                                </dependency>
+                            </dependencies>
+                        </trigger>
+                    </triggers>
+                </item>
+                <item>
+                    <name>Mirror timestamp (CentOS)</name>
+                    <key>mirrortimestamp.centos</key>
+                    <delay>1h</delay>
+                    <description>Mirror timestamp located at /data/centos/TIME</description>
+                    <applications>
+                        <application>
+                            <name>Mirroring</name>
+                        </application>
+                    </applications>
+                    <triggers>
+                        <trigger>
+                            <expression>{now()}-{last()}&gt;43200</expression>
+                            <name>CentOS mirror was not synced for more than 12 hours</name>
+                            <priority>WARNING</priority>
+                            <description>CentOS mirror timestamp is more than 12 hours older than current time.</description>
+                            <dependencies>
+                                <dependency>
+                                    <name>CentOS mirror was not synced for more than 24 hours</name>
+                                    <expression>{CentOS mirror checks:mirrortimestamp.centos.now()}-{CentOS mirror checks:mirrortimestamp.centos.last()}&gt;86400</expression>
+                                </dependency>
+                            </dependencies>
+                        </trigger>
+                        <trigger>
+                            <expression>{now()}-{last()}&gt;86400</expression>
+                            <name>CentOS mirror was not synced for more than 24 hours</name>
+                            <priority>AVERAGE</priority>
+                            <description>CentOS mirror timestamp is more than 24 hours older than current time.</description>
+                        </trigger>
+                    </triggers>
+                </item>
+                <item>
+                    <name>Mirror timestamp (CentOS-Vault)</name>
+                    <key>mirrortimestamp.centosvault</key>
+                    <delay>1h</delay>
+                    <description>Mirror timestamp located at /data/centos-vault/TIME</description>
+                    <applications>
+                        <application>
+                            <name>Mirroring</name>
+                        </application>
+                    </applications>
+                    <triggers>
+                        <trigger>
+                            <expression>{now()}-{last()}&gt;86400</expression>
+                            <name>CentOS-Vault mirror was not synced for more than 24 hours</name>
+                            <priority>WARNING</priority>
+                            <description>CentOS-Vault mirror timestamp is more than 24 hours older than current time.</description>
+                            <dependencies>
+                                <dependency>
+                                    <name>CentOS-Vault mirror was not synced for more than 48 hours</name>
+                                    <expression>{CentOS mirror checks:mirrortimestamp.centosvault.now()}-{CentOS mirror checks:mirrortimestamp.centosvault.last()}&gt;172800</expression>
+                                </dependency>
+                            </dependencies>
+                        </trigger>
+                        <trigger>
+                            <expression>{now()}-{last()}&gt;172800</expression>
+                            <name>CentOS-Vault mirror was not synced for more than 48 hours</name>
+                            <priority>AVERAGE</priority>
+                            <description>CentOS-Vault mirror timestamp is more than 48 hours older than current time.</description>
+                        </trigger>
+                    </triggers>
+                </item>
+                <item>
+                    <name>VDO data blocks used</name>
+                    <key>vdo.data_blocks_used</key>
+                    <delay>5m</delay>
+                    <description>cat /sys/kvdo/vdo_data/statistics/data_blocks_used</description>
+                    <applications>
+                        <application>
+                            <name>VDO</name>
+                        </application>
+                    </applications>
+                    <preprocessing>
+                        <step>
+                            <type>MULTIPLIER</type>
+                            <params>4096</params>
+                        </step>
+                    </preprocessing>
+                </item>
+                <item>
+                    <name>VDO logical blocks</name>
+                    <key>vdo.logical_blocks</key>
+                    <delay>1h</delay>
+                    <history>30d</history>
+                    <description>cat /sys/kvdo/vdo_data/statistics/logical_blocks</description>
+                    <applications>
+                        <application>
+                            <name>VDO</name>
+                        </application>
+                    </applications>
+                    <preprocessing>
+                        <step>
+                            <type>MULTIPLIER</type>
+                            <params>4096</params>
+                        </step>
+                    </preprocessing>
+                </item>
+                <item>
+                    <name>VDO logical blocks used</name>
+                    <key>vdo.logical_blocks_used</key>
+                    <delay>5m</delay>
+                    <description>cat /sys/kvdo/vdo_data/statistics/logical_blocks_used</description>
+                    <applications>
+                        <application>
+                            <name>VDO</name>
+                        </application>
+                    </applications>
+                    <preprocessing>
+                        <step>
+                            <type>MULTIPLIER</type>
+                            <params>4096</params>
+                        </step>
+                    </preprocessing>
+                </item>
+                <item>
+                    <name>VDO overhead blocks used</name>
+                    <key>vdo.overhead_blocks_used</key>
+                    <delay>5m</delay>
+                    <description>cat /sys/kvdo/vdo_data/statistics/overhead_blocks_used</description>
+                    <applications>
+                        <application>
+                            <name>VDO</name>
+                        </application>
+                    </applications>
+                    <preprocessing>
+                        <step>
+                            <type>MULTIPLIER</type>
+                            <params>4096</params>
+                        </step>
+                    </preprocessing>
+                </item>
+                <item>
+                    <name>VDO physical blocks</name>
+                    <key>vdo.physical_blocks</key>
+                    <delay>1h</delay>
+                    <history>30d</history>
+                    <description>cat /sys/kvdo/vdo_data/statistics/physical_blocks</description>
+                    <applications>
+                        <application>
+                            <name>VDO</name>
+                        </application>
+                    </applications>
+                    <preprocessing>
+                        <step>
+                            <type>MULTIPLIER</type>
+                            <params>4096</params>
+                        </step>
+                    </preprocessing>
+                </item>
+            </items>
+        </template>
+    </templates>
+</zabbix_export>

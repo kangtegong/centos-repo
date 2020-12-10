@@ -1,0 +1,7 @@
+---
+- hosts: localhost
+  remote_user: root
+  roles:
+    - { role: 'reposerver_base_os', vdo_disk: '/dev/sdb', vdo_disk_size: '500G' }
+    - reposerver_tls
+    - ansible.osc-zabbix-agent

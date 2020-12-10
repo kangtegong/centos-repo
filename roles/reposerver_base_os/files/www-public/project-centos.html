@@ -1,0 +1,38 @@
+<html>
+<head><title>OpenSource Consulting Public Mirror Site</title></head>
+<body>
+<a href="https://osci.kr/"><img src="https://osci.kr/images/main/header_logo_c.png" alt="OSC logo"/></a>
+<h1>CentOS main repository</h1>
+<p>This mirror aims to become part of official CentOS mirrors as seen on <a href="https://www.centos.org/download/mirrors/">List of CentOS Mirrors</a>. If you would like to configure your system to use repositories provided from this mirror please follow instructions on this page.</p>
+
+<h2>Browse mirror directly</h2>
+<a href='/centos'>/centos</a><br/>
+<a href='/centos-vault'>/centos-vault</a>
+
+<h2>How to enable CentOS repositories only from this mirror</h2>
+Add following to your <code>/etc/hosts</code> file.
+<pre>
+59.29.249.221 mirrorlist.centos.org
+</pre>
+Test that 'mirrorlist.centos.org' resolves to address from <code>/etc/hosts</code>.
+<pre>
+# ping -c2 mirrorlist.centos.org
+PING mirrorlist.centos.org (59.29.249.221) 56(84) bytes of data.
+64 bytes from mirrorlist.centos.org (59.29.249.221): icmp_seq=1 ttl=62 time=9.14 ms
+64 bytes from mirrorlist.centos.org (59.29.249.221): icmp_seq=2 ttl=62 time=11.8 ms
+
+--- mirrorlist.centos.org ping statistics ---
+2 packets transmitted, 2 received, 0% packet loss, time 1001ms
+rtt min/avg/max/mdev = 9.148/10.477/11.806/1.329 ms
+</pre>
+This mirror server is emulating mirrorlist.centos.org site and points the systems to proper repositories.
+
+<h2>Direct CentOS ISO downloads from this mirror</h2>
+<table>
+<tr><th>Version</th><th>Arch</th><th>ISO Link</th></tr>
+<!-- iso_table_begin -->
+<!-- iso_table_end -->
+</table>
+
+</body>
+</html>

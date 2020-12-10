@@ -1,0 +1,5 @@
+---
+# defines host/network from which the zabbix agent will accept connection
+# multiple options can be separated by comma ','
+#server_acl: '192.168.0.0/16,10.123.0.0/16'
+server_acl: '192.168.0.0/16'

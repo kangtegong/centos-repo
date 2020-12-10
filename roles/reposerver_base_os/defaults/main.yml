@@ -1,0 +1,3 @@
+---
+vdo_disk: '/dev/sdb'
+vdo_disk_size: '500G'

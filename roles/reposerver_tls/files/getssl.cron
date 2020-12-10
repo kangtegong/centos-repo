@@ -1,0 +1,4 @@
+SHELL=/bin/bash
+PATH=/sbin:/bin:/usr/sbin:/usr/bin
+MAILTO=root
+30 7 * * 1 root date >> /var/log/getssl.log && /usr/local/sbin/getssl --all --nocheck >> /var/log/getssl.log 2>&1

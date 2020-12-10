@@ -1,0 +1,193 @@
+## Update all packages on system
+- name: upgrade all packages
+  yum:
+    name: '*'
+    state: 'latest'
+
+## packages required by ansible modules later
+- name: install package dependencies
+  yum:
+    name: 'policycoreutils-python'
+    state: 'installed'
+
+- name: create root directory for default web
+  file:
+    path: '/var/www'
+    state: 'directory'
+    setype: 'httpd_sys_content_t'
+###### NTP
+- name: install NTP (chrony)
+  yum:
+    name: 'chrony'
+    state: 'installed'
+
+- name: enable and start chronyd
+  systemd:
+    name: 'chronyd'
+    state: started
+    enabled: 'true'
+
+###### VDO
+- name: Install vdo packages
+  yum:
+    name: [ 'vdo', 'kmod-kvdo' ]
+    state: 'installed'
+
+- name: "create VDO on the top of the {{ vdo_disk }}"
+  vdo:
+    name: 'vdo_data'
+    state: 'present'
+    device: "{{ vdo_disk }}"
+    logicalsize: "{{ vdo_disk_size }}"
+    indexmode: 'dense'
+    compression: 'disabled'
+    activated: 'yes'
+    running: 'yes'
+
+####### DATA filesystem on the top of the VDO
+- name: create XFS on top of VDO (this can take few minutes)
+  filesystem:
+    fstype: 'xfs'
+    dev: '/dev/mapper/vdo_data'
+    resizefs: 'yes'
+- name: create /data
+  file:
+    path: '/data'
+    state: 'directory'
+- name: mount VDO to /data
+  mount:
+    src: '/dev/mapper/vdo_data'
+    path: '/data'
+    fstype: 'xfs'
+    opts: 'noatime,discard,x-systemd.requires=vdo.service'
+      # we add 'discard' so VDO can save space when files are deleted automatically
+      # and 'x-systemd.requires=vdo.service' to make sure that vdo service starts before trying to mount this
+    state: 'mounted' # add to /etc/fstab and mount
+- name: set SELinux context on all files in /data directory
+  sefcontext:
+    target: '/data(/.*)?'
+    setype: 'httpd_sys_content_t'
+    state: 'present'
+
+##### Install the HTTP server for providing the files - nginx
+- name: install epel for nginx
+  yum:
+    name: 'epel-release'
+    state: 'installed'
+- name: Install nginx server
+  yum:
+    name: 'nginx'
+    state: 'installed'
+- name: Copy default config file
+  copy:
+    src: 'nginx.conf'
+    dest: '/etc/nginx/nginx.conf'
+    mode: '0644'
+    owner: 'root'
+    group: 'root'
+#TODO FIXME: copy SSL certificates and configuration to support them by default
+- name: enable HTTP/HTTPS (80/tcp,443/tcp) on firewalld
+  firewalld:
+    service: "{{ item }}"
+    permanent: 'yes'
+    immediate: 'yes'
+    state: 'enabled'
+  with_items: [ 'http', 'https' ]
+
+- name: enable and start nginx.service
+  systemd:
+    name: 'nginx'
+    state: started
+    enabled: 'true'
+
+- name: create root directory for default web
+  file:
+    path: '/var/www/www-default'
+    state: 'directory'
+    setype: 'httpd_sys_content_t'
+- name: Copy index.html for default servers
+  copy:
+    src: 'default_index.html'
+    dest: '/var/www/www-default/index.html'
+    mode: '0644'
+    owner: 'root'
+    group: 'root'
+    setype: 'httpd_sys_content_t'
+##### Install the basic RSYNC server for providing files over rsync protocol
+- name: Install rsync server
+  yum:
+    name: 'rsync'
+    state: 'installed'
+- name: copy main configuration file
+  copy:
+    src: 'rsyncd.conf'
+    dest: '/etc/rsyncd.conf'
+    mode: '0644'
+    owner: 'root'
+    group: 'root'
+- name: copy MOTD (banner) file
+  copy:
+    src: 'rsync.motd'
+    dest: '/etc/rsync.motd'
+    mode: '0644'
+    owner: 'root'
+    group: 'root'
+- name: create rsyncd.conf.d directory for project configs
+  file:
+    path: '/etc/rsyncd.conf.d'
+    state: 'directory'
+- name: enable rsyncd (873/tcp) on firewalld
+  firewalld:
+    service: 'rsyncd'
+    permanent: 'yes'
+    immediate: 'yes'
+    state: 'enabled'
+- name: SELinux enable rsyncd to access other files read-only
+  seboolean:
+    name: 'rsync_export_all_ro'
+    state: 'yes'
+    persistent: 'yes'
+- name: enable and start rsyncd.service
+  systemd:
+    name: 'rsyncd'
+    state: started
+    enabled: 'true'
+
+##### Directory for script to be run by cron by project hosted on reposerver
+- name: create direcotry fore reposerver cron scripts
+  file:
+    path: '/etc/cron.reposerver.d'
+    state: 'directory'
+##### Public webserver configuration
+- name: create public www directory
+  file:
+    path: '/var/www/www-public'
+    state: 'directory'
+    setype: 'httpd_sys_content_t'
+- name: copy nginx configuration
+  copy:
+    src: 'www-public.conf'
+    dest: '/etc/nginx/conf.d/www-public.conf'
+    mode: '0644'
+    owner: 'root'
+    group: 'root'
+- name: copy files to /www-public
+  synchronize:
+    src: www-public/
+    dest: /var/www/www-public
+##### Disable lvm_metad (to prevent hang during system shutdown/reboot)
+- name: Disable use_lvmetad in /etc/lvm/lvm.conf if it exists
+  lineinfile:
+    dest: '/etc/lvm/lvm.conf'
+    regexp: '^\s+use_lvmetad'
+    line: '        use_lvmetad = 0'
+- name: Stop lvm2-lvmetad.service
+  systemd:
+    name: 'lvm2-lvmetad'
+    state: 'stopped'
+- name: Stop, disable and mask lvm2-lvmetad.socket
+  systemd:
+    name: 'lvm2-lvmetad.socket'
+    enabled: false
+    state: 'stopped'
+    masked: 'yes'
